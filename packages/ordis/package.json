@@ -1,0 +1,19 @@
+{
+  "name": "ordis",
+  "module": "bot.ts",
+  "type": "module",
+  "private": true,
+  "devDependencies": {
+    "@types/bun": "latest"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  },
+  "dependencies": {
+    "discord.js": "^14.18.0",
+    "dotenv": "^16.4.7"
+  },
+  "scripts": {
+    "start": "bun run index.ts"
+  }
+}

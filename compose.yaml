@@ -1,0 +1,31 @@
+services:
+  database:
+    image: postgres
+    ports:
+      - "5432:5432"
+    env_file: ".env"
+    volumes:
+      - ./postgres-data:/var/lib/postgresql/data
+  bot:
+    build: ./packages/ordis
+    env_file: ".env"
+    ports:
+      - "33250:33250"
+    depends_on:
+      - database
+      - api
+  client:
+    build: ./packages/www-ordis-bot
+    env_file: ".env"
+    ports:
+      - "33251:33251"
+    depends_on:
+      - database
+      - api
+  api:
+    build: ./packages/ordis-api
+    env_file: ".env"
+    ports:
+      - "33252:33252"
+    depends_on:
+      - database
