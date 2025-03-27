@@ -10,9 +10,9 @@ import {
   type PartialUser,
 } from "discord.js";
 import { config } from "dotenv";
-
-const TARGET_MESSAGE_ID = "1353129912587911168";
-const ROLE_MAP = new Map<string, string>([["platinum", "Warframe"]]);
+import * as fs from "fs";
+import * as path from "path";
+import type { IPlugin } from "common";
 
 // Load environment variables
 config();
@@ -36,57 +36,45 @@ client.once(Events.ClientReady, (readyClient) => {
   console.log(`Ready! Logged in as ${readyClient.user.tag}`);
 });
 
-async function handleReaction(
-  reaction: MessageReaction | PartialMessageReaction,
-  user: User | PartialUser,
-  addRole: boolean,
-) {
-  try {
-    if (reaction.partial) await reaction.fetch();
-    // I need to check if database contains that message_id
-    const response = await fetch(`api:33252/reaction-roles/${reaction.message.id}`);
-    if (response.ok) {
-      const rawdata: any = await response.json();
-      const data = rawdata.map((item: any) => ({
-        emojiId: item.emojiid,
-        roleId: item.roleid
-      }));
+loadPlugins(client);
 
-      const emojiId = reaction.emoji.id;
-      if (!emojiId) return;
-      const filteredData = data.find((item: any) => item.emojiId === emojiId);
-      if (!filteredData) {
-        console.log(`Failed to find an emoji associated with: ${reaction.message.id}`);
-        return;
-      }
-      const roleId = filteredData.roleId;
-      const guild = reaction.message.guild;
-      if (!guild) return console.error("Guild not found.");
-      const member = await guild.members.fetch(user.id);
-      if (!member) return console.error("Member not found.");
-      const role = guild.roles.cache.find((r) => r.id === roleId);
-      if (!role) {
-        console.error(`Role "${role}" not found.`);
-        return;
-      }
-      if (addRole) {
-        await member.roles.add(role);
-        console.log(`Added role "${role.name}" to ${user.tag}`);
-      } else {
-        await member.roles.remove(role);
-        console.log(`Removed role "${role.name}" from ${user.tag}`);
+client.login(token);
+
+export async function loadPlugins(client: Client) {
+  const pluginsDir = path.join(__dirname, '/plugins');
+
+  try {
+    const files = fs.readdirSync(pluginsDir);
+
+    for (const file of files) {
+      if (file.endsWith('.ts') || file.endsWith('.js')) {
+        try {
+          const modulePath = path.join(pluginsDir, file);
+          const module = await import(modulePath);
+          console.log('Module details for:', file);
+                    console.log('Module exports:', Object.keys(module));
+                    console.log('Module content:', {
+                      default: module.default,
+                      namedExports: Object.entries(module).filter(([key]) => key !== 'default'),
+                      hasDefault: 'default' in module,
+                      constructable: typeof module.default === 'function',
+                      prototype: module.default?.prototype,
+                    });
+          // Get the plugin class that implements the Plugin interface
+          const PluginClass = module.default || Object.values(module)[0];
+          if (PluginClass?.prototype?.setup) {
+            const plugin = new PluginClass() as IPlugin;
+            plugin.setup(client);
+            console.log(`✓ Loaded plugin: ${file}`);
+          } else {
+            console.warn(`⚠ ${file} doesn't implement the Plugin interface`);
+          }
+        } catch (error) {
+          console.error(`✗ Error loading plugin ${file}:`, error);
+        }
       }
     }
   } catch (error) {
-    console.error(`Error handling reaction:`, error);
+    console.error('✗ Error reading plugins directory:', error);
   }
 }
-
-client.on(Events.MessageReactionAdd, (reaction, user) =>
-  handleReaction(reaction, user, true),
-);
-client.on(Events.MessageReactionRemove, (reaction, user) =>
-  handleReaction(reaction, user, false),
-);
-
-client.login(token);

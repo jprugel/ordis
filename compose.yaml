@@ -11,6 +11,8 @@ services:
     env_file: ".env"
     ports:
       - "33250:33250"
+    volumes:
+      - ./plugins:/usr/src/app/plugins
     depends_on:
       - database
       - api
