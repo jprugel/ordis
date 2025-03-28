@@ -1,4 +1,4 @@
-import { IPlugin } from "common";
+import { IPlugin } from "ordis/plugins";
 import {
   Client,
   Events,
@@ -9,7 +9,10 @@ import {
 } from "discord.js";
 
 export default class ReactionRolesPlugin implements IPlugin {
-  setup(client: Client): void {
+  version = "0.1.0";
+  name = "Reaction Roles Plugin";
+
+  async setup(client: Client): Promise<void> {
     async function handleReaction(
       reaction: MessageReaction | PartialMessageReaction,
       user: User | PartialUser,

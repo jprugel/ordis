@@ -12,7 +12,10 @@ import {
 import { config } from "dotenv";
 import * as fs from "fs";
 import * as path from "path";
-import type { IPlugin } from "common";
+import { PluginManager } from "ordis/plugins";
+
+const PLUGIN_FILE_EXTENSIONS = ['.ts', '.js'];
+const PLUGINS_DIRECTORY = '/plugins';
 
 // Load environment variables
 config();
@@ -32,34 +35,36 @@ const client = new Client({
   partials: [Partials.Message, Partials.Reaction],
 });
 
-client.once(Events.ClientReady, (readyClient) => {
+const pluginManager = new PluginManager(client);
+
+client.once(Events.ClientReady, async (readyClient) => {
   console.log(`Ready! Logged in as ${readyClient.user.tag}`);
-});
-
-loadPlugins(client);
-
-client.login(token);
-
-export async function loadPlugins(client: Client) {
-  const pluginsDir = path.join(__dirname, '/plugins');
 
   try {
-    const files = fs.readdirSync(pluginsDir);
+    await pluginManager.loadAllPlugins();
+    pluginManager.startWatching();
+  } catch (error) {
+    console.error("Failed to initialize plugins: ", error);
+  }
+});
+
+await client.login(token);
+
+/*
+export async function loadPlugins(client: Client) {
+  const pluginsDir = path.join(import.meta.dir, PLUGINS_DIRECTORY);
+  if (!fs.promises.exists(pluginsDir)) {
+    throw new Error(`Plugins directory not found: ${pluginsDir}`);
+  }
+
+  try {
+    const files = await fs.promises.readdir(pluginsDir);
 
     for (const file of files) {
-      if (file.endsWith('.ts') || file.endsWith('.js')) {
+      if (PLUGIN_FILE_EXTENSIONS.some(ext => file.endsWith(ext))) {
         try {
           const modulePath = path.join(pluginsDir, file);
           const module = await import(modulePath);
-          console.log('Module details for:', file);
-                    console.log('Module exports:', Object.keys(module));
-                    console.log('Module content:', {
-                      default: module.default,
-                      namedExports: Object.entries(module).filter(([key]) => key !== 'default'),
-                      hasDefault: 'default' in module,
-                      constructable: typeof module.default === 'function',
-                      prototype: module.default?.prototype,
-                    });
           // Get the plugin class that implements the Plugin interface
           const PluginClass = module.default || Object.values(module)[0];
           if (PluginClass?.prototype?.setup) {
@@ -69,7 +74,7 @@ export async function loadPlugins(client: Client) {
           } else {
             console.warn(`⚠ ${file} doesn't implement the Plugin interface`);
           }
-        } catch (error) {
+        } catch (error: unknown) {
           console.error(`✗ Error loading plugin ${file}:`, error);
         }
       }
@@ -77,4 +82,4 @@ export async function loadPlugins(client: Client) {
   } catch (error) {
     console.error('✗ Error reading plugins directory:', error);
   }
-}
+  }*/

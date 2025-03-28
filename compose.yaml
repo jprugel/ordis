@@ -13,6 +13,7 @@ services:
       - "33250:33250"
     volumes:
       - ./plugins:/usr/src/app/plugins
+      - ./packages/common:/usr/src/app/packages/common
     depends_on:
       - database
       - api
