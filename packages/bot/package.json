@@ -1,21 +1,24 @@
 {
-  "name": "ordis",
-  "module": "bot.ts",
+  "name": "bot",
+  "module": "index.ts",
   "type": "module",
   "private": true,
   "devDependencies": {
-    "@types/bun": "latest"
+    "@types/bun": "latest",
+    "@types/react": "^19.0.12",
+    "@types/react-dom": "^19.0.4"
   },
   "peerDependencies": {
     "typescript": "^5"
   },
   "dependencies": {
     "discord.js": "^14.18.0",
-    "dotenv": "^16.4.7"
+    "dotenv": "^16.4.7",
+    "react": "^19.1.0",
+    "common": "workspace:*"
   },
   "exports": {
-    ".": "./index.ts",
-    "./plugins": "./plugins.ts"
+    ".": "./index.ts"
   },
   "scripts": {
     "start": "bun run index.ts"

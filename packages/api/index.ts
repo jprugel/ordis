@@ -26,6 +26,24 @@ async function ensureTablesExist() {
 const server = Bun.serve({
   port: 33252,
   routes: {
+    "/plugins": {
+      GET: async req => {
+        ensurePluginTableExist();
+        const plugins = await sql`
+          SELECT name, version, enabled
+          FROM plugins
+        `;
+
+        return Response.json(plugins);
+      },
+      POST: async req => {
+        ensurePluginTableExist();
+        const { name, version, enabled } = await req.json() as PluginInfo;
+        insertPlugin(name, version, enabled);
+
+        return new Response("Success", { status: 200 });
+      }
+    },
     "/reaction-roles/:messageId": async req => {
         const emojiToRole = await sql`
           SELECT emojiId, roleId
@@ -81,6 +99,43 @@ async function insertReactionRole(
     INSERT INTO reactionRoles (messageId, emojiId, roleId)
     VALUES (${messageId}, ${emojiId}, ${roleId})
   `;
+}
+
+async function insertPlugin(
+  name: string,
+  version: string,
+  enabled: boolean,
+) {
+  await sql`
+    INSERT INTO plugins (name, version, enabled)
+    VALUES (${name}, ${version}, ${enabled})
+  `;
+}
+
+class PluginInfo {
+  name: string;
+  version: string;
+  enabled: boolean = true;
+
+  constructor(name: string, version: string) {
+    this.name = name;
+    this.version = version;
+  }
+}
+
+async function ensurePluginTableExist() {
+  console.log("🔄 Checking database schema...");
+
+  await sql`
+    CREATE TABLE IF NOT EXISTS plugins (
+      id SERIAL PRIMARY KEY,
+      name TEXT NOT NULL,
+      version TEXT NOT NULL,
+      enabled BOOLEAN
+    );
+  `;
+
+  console.log("✅ Database tables verified!");
 }
 
 console.log(`Listening on ${server.url}`);

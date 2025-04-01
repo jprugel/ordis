@@ -1,28 +1,44 @@
-import { IPlugin } from "ordis/plugins";
 import {
   Client,
   Events,
   MessageReaction,
-  PartialMessageReaction,
+  type PartialMessageReaction,
   User,
-  PartialUser,
+  type PartialUser,
 } from "discord.js";
+import { AbstractPlugin, type IPluginUiData } from "@ordis/common";
+import React, { type ReactNode } from "react";
 
-export default class ReactionRolesPlugin implements IPlugin {
+export default class ReactionRolesPlugin extends AbstractPlugin {
   version = "0.1.0";
-  name = "Reaction Roles Plugin";
+  name = "Reaction Roles";
+  id = "reactionRoles";
 
-  async setup(client: Client): Promise<void> {
+  getUiData(): IPluginUiData {
+    return {
+      name: this.name,
+      metadata: {
+        version: this.version,
+        id: this.id,
+      },
+    };
+  }
+
+  renderUi(data: IPluginUiData): ReactNode {
+    return <div>Default Ui for {data.name}</div>;
+  }
+
+  async init(client: Client): Promise<void> {
     async function handleReaction(
       reaction: MessageReaction | PartialMessageReaction,
       user: User | PartialUser,
-      addRole: boolean,
+      addRole: boolean
     ) {
       try {
         if (reaction.partial) await reaction.fetch();
         // I need to check if database contains that message_id
         const response = await fetch(
-          `api:33252/reaction-roles/${reaction.message.id}`,
+          `api:33252/reaction-roles/${reaction.message.id}`
         );
         if (response.ok) {
           const rawdata: any = await response.json();
@@ -34,11 +50,11 @@ export default class ReactionRolesPlugin implements IPlugin {
           const emojiId = reaction.emoji.id;
           if (!emojiId) return;
           const filteredData = data.find(
-            (item: any) => item.emojiId === emojiId,
+            (item: any) => item.emojiId === emojiId
           );
           if (!filteredData) {
             console.log(
-              `Failed to find an emoji associated with: ${reaction.message.id}`,
+              `Failed to find an emoji associated with: ${reaction.message.id}`
             );
             return;
           }
@@ -66,10 +82,10 @@ export default class ReactionRolesPlugin implements IPlugin {
     }
 
     client.on(Events.MessageReactionAdd, (reaction, user) =>
-      handleReaction(reaction, user, true),
+      handleReaction(reaction, user, true)
     );
     client.on(Events.MessageReactionRemove, (reaction, user) =>
-      handleReaction(reaction, user, false),
+      handleReaction(reaction, user, false)
     );
   }
 }

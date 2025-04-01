@@ -7,18 +7,17 @@ services:
     volumes:
       - ./postgres-data:/var/lib/postgresql/data
   bot:
-    build: ./packages/ordis
+    build:
+      dockerfile: packages/bot/Dockerfile
     env_file: ".env"
     ports:
       - "33250:33250"
-    volumes:
-      - ./plugins:/usr/src/app/plugins
-      - ./packages/common:/usr/src/app/packages/common
     depends_on:
       - database
       - api
   client:
-    build: ./packages/www-ordis-bot
+    build:
+      dockerfile: packages/web/Dockerfile
     env_file: ".env"
     ports:
       - "33251:33251"
@@ -26,7 +25,7 @@ services:
       - database
       - api
   api:
-    build: ./packages/ordis-api
+    build: ./packages/api
     env_file: ".env"
     ports:
       - "33252:33252"
